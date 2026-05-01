@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام كاشير مطعم الساندوتشات</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr 350px;
+            height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: #16213e;
+            padding: 20px;
+            border-left: 2px solid #0f3460;
+            overflow-y: auto;
+        }
+        .logo {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #0f3460;
+        }
+        .nav-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #0f3460;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: bold;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: #e94560;
+            transform: translateX(-5px);
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 20px;
+            overflow-y: auto;
+            background: #1a1a2e;
+        }
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        /* POS Screen */
+        .pos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .menu-item {
+            background: #16213e;
+            border: 2px solid #0f3460;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .menu-item:hover {
+            transform: translateY(-5px);
+            border-color: #e94560;
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
+        }
+        .menu-item .price {
+            color: #e94560;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .menu-item .stock-warning {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        /* Cart */
+        .cart-panel {
+            background: #16213e;
+            padding: 20px;
+            border-right: 2px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+        }
+        .cart-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #e94560;
+            text-align: center;
+        }
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #0f3460;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+        .cart-item button {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .cart-total {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: #4ecca3;
+        }
+        .checkout-btn {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .checkout-btn:hover {
+            background: #45b08c;
+            transform: scale(1.05);
+        }
+        
+        /* Inventory & Recipes */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #16213e;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid #0f3460;
+        }
+        .data-table th {
+            background: #0f3460;
+            color: #e94560;
+        }
+        .data-table tr:hover {
+            background: #0f3460;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #e94560; color: white; }
+        .btn-success { background: #4ecca3; color: #1a1a2e; }
+        .btn-warning { background: #f9ca24; color: #1a1a2e; }
+        .btn:hover { transform: scale(1.05); opacity: 0.9; }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e94560;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #0f3460;
+            background: #0f3460;
+            color: #eee;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        
+        .recipe-ingredients {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .ingredient-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .ingredient-row input, .ingredient-row select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #16213e;
+            background: #16213e;
+            color: #eee;
+            border-radius: 5px;
+        }
+        .cost-badge {
+            background: #e94560;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .profit-good { color: #4ecca3; }
+        .profit-bad { color: #ff6b6b; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #e94560;
+        }
+        .close-modal {
+            float: left;
+            font-size: 28px;
+            cursor: pointer;
+            color: #e94560;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #0f3460;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .stat-label {
+            color: #aaa;
+            margin-top: 10px;
+        }
+        
+        .receipt {
+            background: white;
+            color: black;
+            padding: 20px;
+            max-width: 300px;
+            margin: 0 auto;
+            font-family: 'Courier New', monospace;
+        }
+        .receipt-header { text-align: center; border-bottom: 2px dashed black; padding-bottom: 10px; margin-bottom: 10px; }
+        .receipt-item { display: flex; justify-content: space-between; margin: 5px 0; }
+        .receipt-total { border-top: 2px dashed black; margin-top: 10px; padding-top: 10px; font-weight: bold; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            .receipt, .receipt * { visibility: visible; }
+            .receipt { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
+        }
+        
+        .low-stock { color: #ff6b6b; font-weight: bold; }
+        .unit-select { min-width: 100px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">🥪 مطعمي</div>
+            <div class="nav-item active" onclick="showSection('pos')">🛒 كاشير</div>
+            <div class="nav-item" onclick="showSection('inventory')">📦 المخزون</div>
+            <div class="nav-item" onclick="showSection('recipes')">📝 الوصفات</div>
+            <div class="nav-item" onclick="showSection('menu')">🍔 إدارة المنيو</div>
+            <div class="nav-item" onclick="showSection('reports')">📊 التقارير</div>
+            <div class="nav-item" onclick="showSection('settings')">⚙️ الإعدادات</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- POS Section -->
+            <div id="pos" class="section active">
+                <h2 style="margin-bottom: 20px; color: #e94560;">🛒 نقطة البيع</h2>
+                <div class="pos-grid" id="menuGrid"></div>
+                
+                <div style="margin-top: 30px;">
+                    <h3 style="color: #e94560; margin-bottom: 15px;">🥤 المشروبات</h3>
+                    <div class="pos-grid" id="drinksGrid"></div>
+                </div>
+            </div>
+
+            <!-- Inventory Section -->
+            <div id="inventory" class="section">
+                <h2 style="margin-bottom: 20px; color: #e94560;">📦 إدارة المخزون</h2>
+                <button class="btn btn-primary" onclick="showAddIngredientModal()">+ إضافة مادة خام</button>
+                <button class="btn btn-success" onclick="showStockInModal()">📥 توريد مخزون</button>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>المادة</th>
+                            <th>الكمية المتاحة</th>
+                            <th>الوحدة</th>
+                            <th>سعر الوحدة</th>
+                            <th>القيمة</th>
+                            <th>الحد الأدنى</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTable"></tbody>
+                </table>
+            </div>
+
+            <!-- Recipes Section -->
+            <div id="recipes" class="section">
+                <h2 style="margin-bottom: 20px; color: #e94560;">📝 وصفات التحضير</h2>
+                <button class="btn btn-primary" onclick="showRecipeModal()">+ إضافة وصفة</button>
+                <div id="recipesList" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- Menu Management -->
+            <div id="menu" class="section">
+                <h2 style="margin-bottom: 20px; color: #e94560;">🍔 إدارة المنيو</h2>
+                <button class="btn btn-primary" onclick="showAddItemModal()">+ إضافة صنف</button>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الصنف</th>
+                            <th>السعر</th>
+                            <th>تكلفة المواد</th>
+                            <th>هامش الربح</th>
+                            <th>الوصفة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menuTable"></tbody>
+                </table>
+            </div>
+
+            <!-- Reports -->
+            <div id="reports" class="section">
+                <h2 style="margin-bottom: 20px; color: #e94560;">📊 التقارير والتحليلات</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="todaySales">0</div>
+                        <div class="stat-label">مبيعات اليوم</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="todayOrders">0</div>
+                        <div class="stat-label">عدد الطلبات</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgProfit">0%</div>
+                        <div class="stat-label">متوسط الربح</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="lowStockCount">0</div>
+                        <div class="stat-label">مواد منخفضة</div>
+                    </div>
+                </div>
+                
+                <h3 style="color: #e94560; margin: 20px 0;">📈 حركة المبيعات</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الوقت</th>
+                            <th>الصنف</th>
+                            <th>الكمية</th>
+                            <th>الإجمالي</th>
+                            <th>التكلفة</th>
+                            <th>الربح</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTable"></tbody>
+                </table>
+            </div>
+
+            <!-- Settings -->
+            <div id="settings" class="section">
+                <h2 style="margin-bottom: 20px; color: #e94560;">⚙️ إعدادات النظام</h2>
+                <div class="form-group">
+                    <label>اسم المطعم</label>
+                    <input type="text" id="restaurantName" value="مطعم الساندوتشات">
+                </div>
+                <div class="form-group">
+                    <label>نسبة العجز المسموح بها (%)</label>
+                    <input type="number" id="wastePercent" value="5" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>العملة</label>
+                    <select id="currency">
+                        <option value="ج.م">جنيه مصري (ج.م)</option>
+                        <option value="$">دولار ($)</option>
+                    </select>
+                </div>
+                <button class="btn btn-success" onclick="saveSettings()">حفظ الإعدادات</button>
+            </div>
+        </div>
+
+        <!-- Cart Panel -->
+        <div class="cart-panel">
+            <div class="cart-header">🧾 الطلب الحالي</div>
+            <div class="cart-items" id="cartItems"></div>
+            <div class="cart-total" id="cartTotal">0 ج.م</div>
+            <button class="checkout-btn" onclick="checkout()">💵 الدفع وطباعة الفاتورة</button>
+            <button class="btn btn-warning" onclick="clearCart()" style="width: 100%; margin-top: 10px;">🗑️ إفراغ</button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="addIngredientModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('addIngredientModal')">&times;</span>
+            <h2 style="color: #e94560; margin-bottom: 20px;">إضافة مادة خام</h2>
+            <div class="form-group">
+                <label>اسم المادة</label>
+                <input type="text" id="ingName" placeholder="مثال: بطاطس">
+            </div>
+            <div class="form-group">
+                <label>الوحدة</label>
+                <select id="ingUnit">
+                    <option value="كجم">كيلوجرام</option>
+                    <option value="جرام">جرام</option>
+                    <option value="لتر">لتر</option>
+                    <option value="مل">مللي</option>
+                    <option value="قطعة">قطعة</option>
+                    <option value="علبة">علبة</option>
+                    <option value="رغيف">رغيف</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>الكمية الحالية</label>
+                <input type="number" id="ingQty" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>سعر الوحدة (ج.م)</label>
+                <input type="number" id="ingPrice" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>الحد الأدنى للتنبيه</label>
+                <input type="number" id="ingMin" step="0.01" value="5">
+            </div>
+            <button class="btn btn-success" onclick="addIngredient()">حفظ</button>
+        </div>
+    </div>
+
+    <div id="recipeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('recipeModal')">&times;</span>
+            <h2 style="color: #e94560; margin-bottom: 20px;">وصفة جديدة</h2>
+            <div class="form-group">
+                <label>اسم الوصفة</label>
+                <input type="text" id="recipeName" placeholder="مثال: ساندوتش بطاطس سوري">
+            </div>
+            <div class="form-group">
+                <label>نوع الصنف</label>
+                <select id="recipeType">
+                    <option value="food">أكل</option>
+                    <option value="drink">مشروب</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>المكونات:</label>
+                <div id="recipeIngredients"></div>
+                <button class="btn btn-primary" onclick="addRecipeIngredient()" style="margin-top: 10px;">+ إضافة مكون</button>
+            </div>
+            <div class="form-group">
+                <label>تعليمات التحضير</label>
+                <textarea id="recipeInstructions" rows="3"></textarea>
+            </div>
+            <button class="btn btn-success" onclick="saveRecipe()">حفظ الوصفة</button>
+        </div>
+    </div>
+
+    <div id="addItemModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('addItemModal')">&times;</span>
+            <h2 style="color: #e94560; margin-bottom: 20px;">إضافة صنف للمنيو</h2>
+            <div class="form-group">
+                <label>اسم الصنف</label>
+                <input type="text" id="itemName">
+            </div>
+            <div class="form-group">
+                <label>السعر (ج.م)</label>
+                <input type="number" id="itemPrice" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>اختر الوصفة</label>
+                <select id="itemRecipe"></select>
+            </div>
+            <button class="btn btn-success" onclick="addMenuItem()">إضافة للمنيو</button>
+        </div>
+    </div>
+
+    <div id="stockInModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('stockInModal')">&times;</span>
+            <h2 style="color: #e94560; margin-bottom: 20px;">📥 توريد مخزون</h2>
+            <div class="form-group">
+                <label>المادة</label>
+                <select id="stockIngredient"></select>
+            </div>
+            <div class="form-group">
+                <label>الكمية المضافة</label>
+                <input type="number" id="stockQty" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>سعر الشراء الجديد (للوحدة)</label>
+                <input type="number" id="stockPrice" step="0.01">
+            </div>
+            <button class="btn btn-success" onclick="stockIn()">توريد</button>
+        </div>
+    </div>
+
+    <!-- Receipt Template -->
+    <div id="receiptTemplate" style="display: none;">
+        <div class="receipt" id="printReceipt">
+            <div class="receipt-header">
+                <h2 id="receiptTitle">مطعم الساندوتشات</h2>
+                <p id="receiptDate"></p>
+                <p>فاتورة ضريبية</p>
+            </div>
+            <div id="receiptItems"></div>
+            <div class="receipt-total">
+                <div class="receipt-item">
+                    <span>الإجمالي:</span>
+                    <span id="receiptTotal"></span>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <p>شكراً لزيارتكم!</p>
+                <p id="receiptFooter"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Storage
+        let data = {
+            ingredients: [
+                {id: 1, name: 'بطاطس', unit: 'كجم', qty: 20, price: 15, min: 5},
+                {id: 2, name: 'فريتاس (زيت)', unit: 'لتر', qty: 10, price: 25, min: 2},
+                {id: 3, name: 'بهارات بطاطس', unit: 'جرام', qty: 500, price: 0.1, min: 100},
+                {id: 4, name: 'رغيف سوري', unit: 'رغيف', qty: 100, price: 2, min: 20},
+                {id: 5, name: 'ثومية', unit: 'جرام', qty: 2000, price: 0.05, min: 500},
+                {id: 6, name: 'بطاطس مقلي', unit: 'جرام', qty: 5000, price: 0.08, min: 1000},
+                {id: 7, name: 'كبدة', unit: 'كجم', qty: 15, price: 120, min: 3},
+                {id: 8, name: 'بصل', unit: 'كجم', qty: 10, price: 8, min: 2},
+                {id: 9, name: 'فلفل', unit: 'كجم', qty: 5, price: 12, min: 1},
+                {id: 10, name: 'بهارات كبدة', unit: 'جرام', qty: 300, price: 0.15, min: 50},
+                {id: 11, name: 'فيليه دجاج (بانيه)', unit: 'كجم', qty: 20, price: 85, min: 5},
+                {id: 12, name: 'بقسماط', unit: 'كجم', qty: 10, price: 18, min: 2},
+                {id: 13, name: 'بيض', unit: 'قطعة', qty: 60, price: 3, min: 12},
+                {id: 14, name: 'دقيق', unit: 'كجم', qty: 25, price: 12, min: 5},
+                {id: 15, name: 'زيت قلي', unit: 'لتر', qty: 15, price: 22, min: 3},
+                {id: 16, name: 'بيبسي', unit: 'علبة', qty: 48, price: 8, min: 12},
+                {id: 17, name: 'عصير برتقال', unit: 'علبة', qty: 24, price: 12, min: 6},
+                {id: 18, name: 'مياه معدنية', unit: 'علبة', qty: 50, price: 5, min: 10}
+            ],
+            recipes: [
+                {
+                    id: 1,
+                    name: 'ساندوتش بطاطس سوري',
+                    type: 'food',
+                    ingredients: [
+                        {ingId: 4, qty: 1}, // رغيف
+                        {ingId: 6, qty: 150}, // بطاطس مقلي 150جرام
+                        {ingId: 5, qty: 30}, // ثومية 30جرام
+                        {ingId: 3, qty: 5} // بهارات 5جرام
+                    ],
+                    instructions: '1. سخن الرغيف 2. أضف البطاطس المقلي 3. ضع الثومية والبهارات'
+                },
+                {
+                    id: 2,
+                    name: 'ساندوتش بانيه',
+                    type: 'food',
+                    ingredients: [
+                        {ingId: 4, qty: 1}, // رغيف
+                        {ingId: 11, qty: 120}, // فيليه 120جرام
+                        {ingId: 12, qty: 30}, // بقسماط 30جرام
+                        {ingId: 13, qty: 0.5}, // نصف بيضة
+                        {ingId: 14, qty: 20}, // دقيق 20جرام
+                        {ingId: 5, qty: 25}, // ثومية
+                        {ingId: 15, qty: 0.1} // زيت قلي
+                    ],
+                    instructions: '1. تبل الفيليه 2. غطي بالدقيق والبيض والبقسماط 3. اقلي 4. ضع في الرغيف مع الثومية'
+                },
+                {
+                    id: 3,
+                    name: 'كبدة',
+                    type: 'food',
+                    ingredients: [
+                        {ingId: 7, qty: 150}, // كبدة 150جرام
+                        {ingId: 8, qty: 50}, // بصل 50جرام
+                        {ingId: 9, qty: 30}, // فلفل 30جرام
+                        {ingId: 10, qty: 8}, // بهارات 8جرام
+                        {ingId: 4, qty: 1} // رغيف
+                    ],
+                    instructions: '1. قطع الكبدة 2. شوح البصل والفلفل 3. أضف الكبدة والبهارات 4. قدم مع الرغيف'
+                },
+                {
+                    id: 4,
+                    name: 'بيبسي',
+                    type: 'drink',
+                    ingredients: [{ingId: 16, qty: 1}],
+                    instructions: 'قدم بارداً'
+                },
+                {
+                    id: 5,
+                    name: 'عصير برتقال',
+                    type: 'drink',
+                    ingredients: [{ingId: 17, qty: 1}],
+                    instructions: 'قدم بارداً'
+                }
+            ],
+            menuItems: [
+                {id: 1, name: 'ساندوتش بطاطس سوري', price: 35, recipeId: 1},
+                {id: 2, name: 'ساندوتش بانيه', price: 55, recipeId: 2},
+                {id: 3, name: 'كبدة', price: 60, recipeId: 3},
+                {id: 4, name: 'بيبسي', price: 12, recipeId: 4},
+                {id: 5, name: 'عصير برتقال', price: 18, recipeId: 5},
+                {id: 6, name: 'مياه معدنية', price: 7, recipeId: null, customCost: 5}
+            ],
+            sales: [],
+            cart: [],
+            settings: {name: 'مطعم الساندوتشات', wastePercent: 5, currency: 'ج.م'}
+        };
+
+        // Initialize
+        function init() {
+            loadData();
+            renderMenu();
+            renderInventory();
+            renderRecipes();
+            renderMenuManagement();
+            updateReports();
+            updateStockSelect();
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('restaurantData');
+            if (saved) data = JSON.parse(saved);
+        }
+
+        function saveData() {
+            localStorage.setItem('restaurantData', JSON.stringify(data));
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(section).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            event.target.classList.add('active');
+            if (section === 'reports') updateReports();
+        }
+
+        // POS Functions
+        function renderMenu() {
+            const foodGrid = document.getElementById('menuGrid');
+            const drinksGrid = document.getElementById('drinksGrid');
+            foodGrid.innerHTML = '';
+            drinksGrid.innerHTML = '';
+
+            data.menuItems.forEach(item => {
+                const recipe = data.recipes.find(r => r.id === item.recipeId);
+                const cost = calculateItemCost(item);
+                const profit = item.price - cost;
+                const profitPercent = ((profit / item.price) * 100).toFixed(1);
+                
+                const div = document.createElement('div');
+                div.className = 'menu-item';
+                div.onclick = () => addToCart(item);
+                
+                // Check stock availability
+                let stockWarning = '';
+                let canMake = Infinity;
+                if (recipe) {
+                    recipe.ingredients.forEach(ing => {
+                        const ingredient = data.ingredients.find(i => i.id === ing.ingId);
+                        if (ingredient) {
+                            const possible = Math.floor(ingredient.qty / ing.qty);
+                            if (possible < canMake) canMake = possible;
+                        }
+                    });
+                    if (canMake < 5) {
+                        stockWarning = `<span class="stock-warning" style="display:block">متبقي ${canMake}</span>`;
+                    }
+                    if (canMake === 0) {
+                        div.style.opacity = '0.5';
+                        div.style.pointerEvents = 'none';
+                    }
+                }
+
+                div.innerHTML = `
+                    ${stockWarning}
+                    <div style="font-size: 18px; margin-bottom: 10px;">${item.name}</div>
+                    <div class="price">${item.price} ج.م</div>
+                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;">
+                        تكلفة: ${cost.toFixed(2)} | ربح: <span class="${profit > 0 ? 'profit-good' : 'profit-bad'}">${profitPercent}%</span>
+                    </div>
+                `;
+
+                if (recipe && recipe.type === 'drink') {
+                    drinksGrid.appendChild(div);
+                } else {
+                    foodGrid.appendChild(div);
+                }
+            });
+        }
+
+        function calculateItemCost(item) {
+            if (item.customCost) return item.customCost;
+            const recipe = data.recipes.find(r => r.id === item.recipeId);
+            if (!recipe) return 0;
+            
+            let cost = 0;
+            recipe.ingredients.forEach(ing => {
+                const ingredient = data.ingredients.find(i => i.id === ing.ingId);
+                if (ingredient) {
+                    cost += (ingredient.price * ing.qty);
+                }
+            });
+            // Add waste percentage
+            return cost * (1 + data.settings.wastePercent / 100);
+        }
+
+        function addToCart(item) {
+            const existing = data.cart.find(c => c.id === item.id);
+            if (existing) {
+                existing.qty++;
+            } else {
+                data.cart.push({...item, qty: 1});
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            container.innerHTML = '';
+            let total = 0;
+
+            data.cart.forEach((item, index) => {
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.innerHTML = `
+                    <div>
+                        <div>${item.name}</div>
+                        <div style="font-size: 12px; color: #aaa;">${item.qty} × ${item.price}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span>${itemTotal} ج.م</span>
+                        <button onclick="removeFromCart(${index})">✕</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('cartTotal').textContent = total + ' ج.م';
+        }
+
+        function removeFromCart(index) {
+            data.cart.splice(index, 1);
+            renderCart();
+        }
+
+        function clearCart() {
+            data.cart = [];
+            renderCart();
+        }
+
+        function checkout() {
+            if (data.cart.length === 0) return alert('السلة فارغة!');
+
+            const total = data.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const date = new Date().toLocaleString('ar-EG');
+            
+            // Deduct inventory
+            data.cart.forEach(cartItem => {
+                const recipe = data.recipes.find(r => r.id === cartItem.recipeId);
+                if (recipe) {
+                    recipe.ingredients.forEach(ing => {
+                        const ingredient = data.ingredients.find(i => i.id === ing.ingId);
+                        if (ingredient) {
+                            ingredient.qty -= (ing.qty * cartItem.qty);
+                        }
+                    });
+                } else if (cartItem.id === 6) { // Water
+                    const water = data.ingredients.find(i => i.id === 18);
+                    if (water) water.qty -= cartItem.qty;
+                }
+            });
+
+            // Record sale
+            data.cart.forEach(cartItem => {
+                const cost = calculateItemCost(cartItem) * cartItem.qty;
+                data.sales.push({
+                    date: date,
+                    item: cartItem.name,
+                    qty: cartItem.qty,
+                    total: cartItem.price * cartItem.qty,
+                    cost: cost,
+                    profit: (cartItem.price * cartItem.qty) - cost
+                });
+            });
+
+            // Print receipt
+            printReceipt(total, date);
+
+            // Clear cart
+            data.cart = [];
+            renderCart();
+            renderMenu();
+            renderInventory();
+            saveData();
+        }
+
+        function printReceipt(total, date) {
+            const items = data.cart.map(item => `
+                <div class="receipt-item">
+                    <span>${item.name} × ${item.qty}</span>
+                    <span>${item.price * item.qty}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('receiptTitle').textContent = data.settings.name;
+            document.getElementById('receiptDate').textContent = date;
+            document.getElementById('receiptItems').innerHTML = items;
+            document.getElementById('receiptTotal').textContent = total + ' ج.م';
+            document.getElementById('receiptFooter').textContent = `العجز المسموح: ${data.settings.wastePercent}%`;
+
+            const printWindow = window.open('', '', 'height=600,width=300');
+            printWindow.document.write('<html><head><title>فاتورة</title>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(document.getElementById('printReceipt').outerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Inventory Functions
+        function renderInventory() {
+            const tbody = document.getElementById('inventoryTable');
+            tbody.innerHTML = '';
+
+            data.ingredients.forEach(ing => {
+                const value = (ing.qty * ing.price).toFixed(2);
+                const isLow = ing.qty <= ing.min;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${ing.name}</td>
+                    <td class="${isLow ? 'low-stock' : ''}">${ing.qty.toFixed(2)}</td>
+                    <td>${ing.unit}</td>
+                    <td>${ing.price.toFixed(2)}</td>
+                    <td>${value}</td>
+                    <td>${ing.min}</td>
+                    <td class="${isLow ? 'low-stock' : ''}">${isLow ? '⚠️ منخفض' : '✅ جيد'}</td>
+                    <td>
+                        <button class="btn btn-warning" onclick="editIngredient(${ing.id})">✏️</button>
+                        <button class="btn btn-primary" onclick="deleteIngredient(${ing.id})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showAddIngredientModal() {
+            document.getElementById('addIngredientModal').classList.add('active');
+        }
+
+        function addIngredient() {
+            const name = document.getElementById('ingName').value;
+            const unit = document.getElementById('ingUnit').value;
+            const qty = parseFloat(document.getElementById('ingQty').value);
+            const price = parseFloat(document.getElementById('ingPrice').value);
+            const min = parseFloat(document.getElementById('ingMin').value);
+
+            if (!name || isNaN(qty) || isNaN(price)) return alert('يرجى ملء جميع الحقول');
+
+            data.ingredients.push({
+                id: Date.now(),
+                name, unit, qty, price, min
+            });
+
+            closeModal('addIngredientModal');
+            renderInventory();
+            updateStockSelect();
+            saveData();
+            
+            // Clear form
+            document.getElementById('ingName').value = '';
+            document.getElementById('ingQty').value = '';
+            document.getElementById('ingPrice').value = '';
+        }
+
+        function deleteIngredient(id) {
+            if (!confirm('هل أنت متأكد من الحذف؟')) return;
+            data.ingredients = data.ingredients.filter(i => i.id !== id);
+            renderInventory();
+            saveData();
+        }
+
+        function showStockInModal() {
+            document.getElementById('stockInModal').classList.add('active');
+        }
+
+        function updateStockSelect() {
+            const select = document.getElementById('stockIngredient');
+            select.innerHTML = data.ingredients.map(i => 
+                `<option value="${i.id}">${i.name} (${i.qty} ${i.unit})</option>`
+            ).join('');
+        }
+
+        function stockIn() {
+            const ingId = parseInt(document.getElementById('stockIngredient').value);
+            const qty = parseFloat(document.getElementById('stockQty').value);
+            const price = parseFloat(document.getElementById('stockPrice').value);
+
+            if (isNaN(qty) || qty <= 0) return alert('يرجى إدخال كمية صحيحة');
+
+            const ingredient = data.ingredients.find(i => i.id === ingId);
+            if (ingredient) {
+                // Weighted average for new price
+                const totalValue = (ingredient.qty * ingredient.price) + (qty * (price || ingredient.price));
+                const totalQty = ingredient.qty + qty;
+                ingredient.qty = totalQty;
+                if (price) ingredient.price = totalValue / totalQty;
+                
+                renderInventory();
+                closeModal('stockInModal');
+                saveData();
+                alert(`تم توريد ${qty} ${ingredient.unit} من ${ingredient.name}`);
+            }
+        }
+
+        // Recipe Functions
+        function renderRecipes() {
+            const container = document.getElementById('recipesList');
+            container.innerHTML = '';
+
+            data.recipes.forEach(recipe => {
+                const cost = calculateRecipeCost(recipe);
+                const div = document.createElement('div');
+                div.style.cssText = 'background: #16213e; padding: 20px; margin-bottom: 15px; border-radius: 15px; border: 2px solid #0f3460;';
+                
+                let ingsHtml = recipe.ingredients.map(ing => {
+                    const ingredient = data.ingredients.find(i => i.id === ing.ingId);
+                    return ingredient ? `<li>${ingredient.name}: ${ing.qty} ${ingredient.unit} = ${(ingredient.price * ing.qty).toFixed(2)} ج.م</li>` : '';
+                }).join('');
+
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="color: #e94560;">${recipe.name}</h3>
+                        <span class="cost-badge">التكلفة: ${cost.toFixed(2)} ج.م</span>
+                    </div>
+                    <ul style="margin-right: 20px; margin-bottom: 15px; color: #ccc;">${ingsHtml}</ul>
+                    <div style="background: #0f3460; padding: 10px; border-radius: 8px; font-size: 14px;">
+                        <strong>طريقة التحضير:</strong><br>
+                        ${recipe.instructions}
+                    </div>
+                    <button class="btn btn-warning" onclick="deleteRecipe(${recipe.id})" style="margin-top: 10px;">حذف الوصفة</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function calculateRecipeCost(recipe) {
+            let cost = 0;
+            recipe.ingredients.forEach(ing => {
+                const ingredient = data.ingredients.find(i => i.id === ing.ingId);
+                if (ingredient) cost += (ingredient.price * ing.qty);
+            });
+            return cost * (1 + data.settings.wastePercent / 100);
+        }
+
+        function showRecipeModal() {
+            document.getElementById('recipeModal').classList.add('active');
+            document.getElementById('recipeIngredients').innerHTML = '';
+            addRecipeIngredient();
+        }
+
+        function addRecipeIngredient() {
+            const div = document.createElement('div');
+            div.className = 'ingredient-row';
+            div.innerHTML = `
+                <select class="ing-select">
+                    ${data.ingredients.map(i => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('')}
+                </select>
+                <input type="number" placeholder="الكمية" step="0.01" class="ing-qty">
+                <button class="btn btn-primary" onclick="this.parentElement.remove()">✕</button>
+            `;
+            document.getElementById('recipeIngredients').appendChild(div);
+        }
+
+        function saveRecipe() {
+            const name = document.getElementById('recipeName').value;
+            const type = document.getElementById('recipeType').value;
+            const instructions = document.getElementById('recipeInstructions').value;
+            
+            const ingredients = [];
+            document.querySelectorAll('.ingredient-row').forEach(row => {
+                const ingId = parseInt(row.querySelector('.ing-select').value);
+                const qty = parseFloat(row.querySelector('.ing-qty').value);
+                if (ingId && qty) ingredients.push({ingId, qty});
+            });
+
+            if (!name || ingredients.length === 0) return alert('يرجى ملء جميع الحقول');
+
+            data.recipes.push({
+                id: Date.now(),
+                name, type, ingredients, instructions
+            });
+
+            closeModal('recipeModal');
+            renderRecipes();
+            updateRecipeSelect();
+            saveData();
+        }
+
+        function deleteRecipe(id) {
+            if (!confirm('هل أنت متأكد؟ سيتم حذف الوصفة من جميع الأصناف!')) return;
+            data.recipes = data.recipes.filter(r => r.id !== id);
+            // Remove from menu items
+            data.menuItems = data.menuItems.filter(m => m.recipeId !== id);
+            renderRecipes();
+            renderMenuManagement();
+            renderMenu();
+            saveData();
+        }
+
+        // Menu Management
+        function renderMenuManagement() {
+            const tbody = document.getElementById('menuTable');
+            tbody.innerHTML = '';
+
+            data.menuItems.forEach(item => {
+                const cost = calculateItemCost(item);
+                const profit = item.price - cost;
+                const profitPercent = ((profit / item.price) * 100).toFixed(1);
+                const recipe = data.recipes.find(r => r.id === item.recipeId);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.price}</td>
+                    <td>${cost.toFixed(2)}</td>
+                    <td class="${profit > 0 ? 'profit-good' : 'profit-bad'}">${profitPercent}%</td>
+                    <td>${recipe ? recipe.name : 'بدون'}</td>
+                    <td>
+                        <button class="btn btn-warning" onclick="deleteMenuItem(${item.id})">حذف</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showAddItemModal() {
+            document.getElementById('addItemModal').classList.add('active');
+            updateRecipeSelect();
+        }
+
+        function updateRecipeSelect() {
+            const select = document.getElementById('itemRecipe');
+            select.innerHTML = '<option value="">بدون وصفة</option>' + 
+                data.recipes.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+        }
+
+        function addMenuItem() {
+            const name = document.getElementById('itemName').value;
+            const price = parseFloat(document.getElementById('itemPrice').value);
+            const recipeId = document.getElementById('itemRecipe').value;
+
+            if (!name || isNaN(price)) return alert('يرجى ملء جميع الحقول');
+
+            data.menuItems.push({
+                id: Date.now(),
+                name,
+                price,
+                recipeId: recipeId ? parseInt(recipeId) : null,
+                customCost: recipeId ? null : price * 0.6 // Default 60% cost if no recipe
+            });
+
+            closeModal('addItemModal');
+            renderMenuManagement();
+            renderMenu();
+            saveData();
+        }
+
+        function deleteMenuItem(id) {
+            if (!confirm('هل أنت متأكد؟')) return;
+            data.menuItems = data.menuItems.filter(m => m.id !== id);
+            renderMenuManagement();
+            renderMenu();
+            saveData();
+        }
+
+        // Reports
+        function updateReports() {
+            const today = new Date().toDateString();
+            const todaySales = data.sales.filter(s => new Date(s.date).toDateString() === today);
+            
+            const totalSales = todaySales.reduce((sum, s) => sum + s.total, 0);
+            const totalOrders = todaySales.length;
+            const avgProfit = todaySales.length > 0 ? 
+                (todaySales.reduce((sum, s) => sum + s.profit, 0) / totalSales * 100).toFixed(1) : 0;
+            const lowStock = data.ingredients.filter(i => i.qty <= i.min).length;
+
+            document.getElementById('todaySales').textContent = totalSales.toFixed(0);
+            document.getElementById('todayOrders').textContent = totalOrders;
+            document.getElementById('avgProfit').textContent = avgProfit + '%';
+            document.getElementById('lowStockCount').textContent = lowStock;
+
+            const tbody = document.getElementById('salesTable');
+            tbody.innerHTML = '';
+            data.sales.slice(-50).reverse().forEach(sale => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${sale.date.split(',')[0]}</td>
+                    <td>${sale.item}</td>
+                    <td>${sale.qty}</td>
+                    <td>${sale.total.toFixed(2)}</td>
+                    <td>${sale.cost.toFixed(2)}</td>
+                    <td class="${sale.profit > 0 ? 'profit-good' : 'profit-bad'}">${sale.profit.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Settings
+        function saveSettings() {
+            data.settings.name = document.getElementById('restaurantName').value;
+            data.settings.wastePercent = parseFloat(document.getElementById('wastePercent').value);
+            data.settings.currency = document.getElementById('currency').value;
+            saveData();
+            alert('تم حفظ الإعدادات!');
+        }
+
+        // Modal Helpers
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function editIngredient(id) {
+            // Simple edit - in production would open modal with values
+            alert('تعديل المادة - يمكنك حذفها وإضافتها من جديد');
+        }
+
+        // Close modals on outside click
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
